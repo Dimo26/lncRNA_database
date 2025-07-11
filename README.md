@@ -1,9 +1,91 @@
 # Database design and programming for analysis of non-coding RNA in relation to disease causing genes.  
 
-In this project I will be creating a database combining information about lncRNA and the adjacent genes of which are related to diseases. The pupose is to collect all this information in one place for easier and more flexible access. 
+## Introduction
+The purpose of this project is to create a database which combines information about lncRNA and the adjacent genes of which are related to diseases. Non-coding RNAs (ncRNAs) do not code proteins but have important regulatory functions in cells and tissues. NcRNAs can be involved in different disease processes (Nemeth et al, 2024). The pupose of this database is to collect all this information in one place for easier and more flexible access.
 
-## Functions
-The database has been designed to be compatable with Bianca UPPMAX. The database has various applications. It can be used for a double ended search where the user can find ncRNA of which regulates certain genes and vice versa. It is also possible to gain information about regulationtypes such as uppregulation or downregulation. 
+## Functions and applications in Bianca
+The database has been designed to be compatable with Bianca UPPMAX. The database has various applications. It can be used for a double ended search where the user can find ncRNA of which regulates certain genes and vice versa. It is also possible to gain information about regulationtypes such as uppregulation or downregulation.
+
+### Search types
+
+The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv file where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
+
+In command line: 
+
+module load bioinfo-tools
+
+module load python/3.9.5
+
+module load sqlite/3.34.0
+
+python database_setup.py (To create database)
+
+python data_fetcher.py  (To fetch the data from files)
+
+python search_functions.py --search-type stats (to get database statistics)
+
+python search_functions.py --gene --search-type gene-to-ncrna 
+
+python search_functions.py --ncrna --search-type ncrna-to-gene
+
+python search_functions.py --disease name --search-type disease 
+
+adding --export csv to the end of python search_functions.py creates a csv file of the search result which is directed to results file in the directory. 
+
+
+## Database python files
+A general description of the codes provided in each file and the functionality. 
+There is a wide potential with future applications of this code. 
+We can add more sources and integrate these to gain more information or adjust the functionality of the code. 
+
+Since the statistics of the information extracted from the different sources are abundant, we can modify and expand this database to extract more information. The downside of using Bianca cluster is that the files extracted from the sources might not potentially be updated to the latest version with the latest research finds as Bianca is an offline cluster. In order to prevent this and for regular updates, I have linked the original sources of which I have extracted my files for populating the database. This can help users to update these files according to the latest versions for more accurate and expanded results. 
+
+### Database_setup.py
+As the file name describes this python code contains the database setup and creation using sqlite. There are 6 tables (entities) of which the database schema is made of each with attributes of which will be populated using various sources. The tables describe the entities seen in image 1 describing the schema and its relations. 
 
 
 
+
+<img width="1576" height="1108" alt="image" src="https://github.com/user-attachments/assets/6e2752c8-d847-4931-b20c-bc64d6359faa" />
+
+Image 1. ER diagram of the database schema with the tables NC-RNA genes, Regulations, Regulation details, Genes, HPO terms, OMIM entries and Gene disease associations. (Created with ERDplus.com, 2023)
+
+### config.yaml 
+In the configuration file you can find all the sources that contribute to populating the database. Some sources include both fasta and gtf formats. However, the code uses GTF files only. Some files come from sources as zipped or text files of which are taken care of in the code itself to access the content. The first data source Ensembl belonging to Homo sapians GRCh38. Gen code was used to extract information about long noncoding RNAs and lncipedia was used for human transcripts. Disease associations information are from HPO and OMIM. Regulation and prediction sources include Noncode, Mirdb and Targetscan. The database can be improved with additional sources of which can be parsed in the data fetcher code. Since the database needs to be applied for clinical and reasearch use in Bianca all the soruces have been downloaded to a specific directory allowing the database to function properly offline. The urls for the different databases are included in the readme to provide information about the sources and versions of the files downloaded. 
+
+#### Database sources 
+ensembl gtf: https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.GRCh38.110.gtf.gz
+
+ensembl fasta: https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/ncrna/Homo_sapiens.GRCh38.ncrna.fa.gz
+
+Gencode gtf: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.long_noncoding_RNAs.gtf.gz
+
+Gencode lncrna fasta: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.lncRNA_transcripts.fa.gz
+
+Lncipedia fasta url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0.fasta
+
+Lncipedia gtf_url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0_hg38.gtf
+
+OMIM mart file: file found through directory 
+
+HPO obo: https://raw.githubusercontent.com/obophenotype/human-phenotype-ontology/master/hp.obo
+
+Noncode fasta: http://www.noncode.org/datadownload/NONCODEv6_human.fa.gz
+Noncode gtf: http://www.noncode.org/datadownload/NONCODEv6_human_hg38_lncRNA.gtf.gz
+
+Mirdb: http://mirdb.org/download/miRDB_v6.0_prediction_result.txt.gz
+
+Targetscan: https://www.targetscan.org/vert_80/vert_80_data_download/Predicted_Targets_Info.default_predictions.txt.zip
+
+### data_fetcher.py
+
+The data fetcher uses the sources in the config.yaml and populates the databases. It fetches miRNA-target regulations fro the miRDB file. It also fetches the lncRA genes from gencode gtf files with quality score of above 0.7. LncRNA egulations are created with high quality from literature. HPO and omim terms are fetched from obo and mart file respectively. 
+
+### search_functions.py
+This code has NCRNADatabase which is a class thar contains the search function. It goes through the data from the sources and builds the query based on the search of the user ie if its a gene to ncRNA, ncRNA to gene or disease to find regulations, targets and associations. It esentially integrates and combines the tables of the database and the fetched data for search result. In this code the option to export the result in csv format is available to help the user extract the information to local machine. 
+
+### parse_omim_data.py
+It parses information from OMIM and combines it in the database schema for linking disease associations with the genes in the database.  
+
+## References 
+Nemeth, K., Bayraktar, R., Ferracin, M. et al. 2024. Non-coding RNAs in disease: from mechanisms to therapeutics. Nat Rev Genet 25, 211–232.
