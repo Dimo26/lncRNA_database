@@ -1,0 +1,65 @@
+database:
+  path: "database"
+  name: "ncrna_regulation_db.sqlite"
+
+data_sources:
+
+  general_genes_mart: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/general_genes_mart.txt"
+
+  gencode:
+    gencode_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/gencode/gencode.v44.long_noncoding_RNAs.gtf.gz"
+    gencode_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/gencode/gencode.v44.lncRNA_transcripts.fa.gz"
+    timeout: 20
+
+  # LNCipedia data 
+  lncipedia:
+    lncipedia_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.gtf"
+    lncipedia_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.fa"
+    timeout: 20
+
+  # OMIM data
+  omim_data:
+    mart_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/mart_export_OMIM.txt"
+
+  # HPO data
+  hpo:
+    hpo_obo: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/hpo/hp.obo"
+
+  timeout: 30
+  rate_limit: 15  
+  retry_delay: 1 
+
+# REGULATION SOURCES 
+regulation_sources:
+
+  noncode:
+    noncode_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/noncode/lncrna.fa.gz"
+    noncode_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/noncode/lncrna.gtf.gz"
+    
+  # miRDB prediction data
+  mirdb:
+    mirdb_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/mirdb/predictions.txt.gz"
+  
+  # TargetScan prediction data
+  targetscan:
+    targetscan_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/Database_sources/data/regulation/targetscan/targets.zip"
+
+# Search settings
+search:
+  max_results: 1000
+  confidence_threshold: 0.7
+
+# Bianca-specific settings
+bianca:
+  modules:
+    - "bioinfo-tools"
+    - "python/3.9.5"
+    - "sqlite/3.34.0"
+  partition: "core"
+  time: "08:00:00"
+  memory: "16GB"
+
+# Logging
+logging:
+  level: "INFO"
+  file: "logs/ncrna_database.log"
