@@ -8,7 +8,7 @@ The database has been designed to be compatable with Bianca UPPMAX. The database
 
 ### Search types
 
-The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv file where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
+The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv folder where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
 
 In command line: 
 
@@ -38,7 +38,7 @@ A general description of the codes provided in each file and the functionality.
 There is a wide potential with future applications of this code. 
 We can add more sources and integrate these to gain more information or adjust the functionality of the code. 
 
-Since the statistics of the information extracted from the different sources are abundant, we can modify and expand this database to extract more information. The downside of using Bianca cluster is that the files extracted from the sources might not potentially be updated to the latest version with the latest research finds as Bianca is an offline cluster. In order to prevent this and for regular updates, I have linked the original sources of which I have extracted my files for populating the database. This can help users to update these files according to the latest versions for more accurate and expanded results. 
+Since the statistics of the information extracted from the different sources are abundant, we can modify and expand this database to extract more information. The downside of using Bianca cluster is that the files extracted from the sources might not potentially be updated to the latest version with the latest research finds as Bianca is an offline cluster. In order to prevent this and for regular updates, I have linked the original sources of which I have extracted my files for populating the database. This can help users to update these files according to the latest versions for more accurate and expanded results. Once the database is created and the data is fetched one can use search functions to search genes, disease or ncRNA.
 
 ### Database_setup.py
 As the file name describes this python code contains the database setup and creation using sqlite. There are 6 tables (entities) of which the database schema is made of each with attributes of which will be populated using various sources. The tables describe the entities seen in image 1 describing the schema and its relations. 
