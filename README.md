@@ -51,12 +51,9 @@ As the file name describes this python code contains the database setup and crea
 Image 1. ER diagram of the database schema with the tables NC-RNA genes, Regulations, Regulation details, Genes, HPO terms, OMIM entries and Gene disease associations. (Created with ERDplus.com, 2023)
 
 ### config.yaml 
-In the configuration file you can find all the sources that contribute to populating the database. Some sources include both fasta and gtf formats. However, the code uses GTF files only. Some files come from sources as zipped or text files of which are taken care of in the code itself to access the content. The first data source Ensembl belonging to Homo sapians GRCh38 was used for gene structure sequence and interactions. GenCode was used to extract information about long noncoding RNAs specifically annotations, lncipedia was used for human transcripts. Disease associations and phenotype information are from HPO and OMIM. Regulation and prediction sources include Noncode, Mirdb and Targetscan. The database can be improved with additional sources of which can be parsed in the data fetcher code. Since the database needs to be applied for clinical and reasearch use in Bianca all the soruces have been downloaded to a specific directory allowing the database to function properly offline. The urls for the different databases are included in the readme to provide information about the sources and versions of the files downloaded. 
+In the configuration file you can find all the sources that contribute to populating the database. Some sources include both fasta and gtf formats. However, the code uses GTF files only. Some files come from sources as zipped or text files of which are taken care of in the code itself to access the content. GenCode was used to extract information about long noncoding RNAs specifically annotations, lncipedia was used for human transcripts. Disease associations and phenotype information are from HPO and OMIM. Regulation and prediction sources include Noncode, Mirdb and Targetscan. The database can be improved with additional sources of which can be parsed in the data fetcher code. Since the database needs to be applied for clinical and reasearch use in Bianca all the soruces have been downloaded to a specific directory allowing the database to function properly offline. The urls for the different databases are included in the readme to provide information about the sources and versions of the files downloaded. 
 
 #### Database sources 
-ensembl gtf: https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.GRCh38.110.gtf.gz
-
-ensembl fasta: https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/ncrna/Homo_sapiens.GRCh38.ncrna.fa.gz
 
 Gencode gtf: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.long_noncoding_RNAs.gtf.gz
 
@@ -66,7 +63,7 @@ Lncipedia fasta url: https://lncipedia.org/downloads/lncipedia_5_0/full-database
 
 Lncipedia gtf_url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0_hg38.gtf
 
-OMIM mart file: file found through directory 
+OMIM mart file found through directory downloaded from ensembl biomart: https://www.ensembl.org/biomart/martview/d32f188e084d91493eadd4a96965194d
 
 HPO obo: https://raw.githubusercontent.com/obophenotype/human-phenotype-ontology/master/hp.obo
 
