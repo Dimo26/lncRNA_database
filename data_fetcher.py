@@ -14,7 +14,7 @@ from tqdm import tqdm
 import argparse
 
 
-# Logging setup
+# Simple logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class BiancaDataFetcher:
                         continue
                     
                     try:
-                        
+                        # Expected format: ensembl_id, gene_symbol, description, chromosome, start, end, strand
                         fields = line.split('\t')
                         if len(fields) >= 7:
                             ensembl_id, gene_symbol, description, chromosome, start, end, strand = fields[:7]
@@ -60,7 +60,7 @@ class BiancaDataFetcher:
                             if not ensembl_id or not gene_symbol:
                                 continue
                             
-                            
+                            # Clean chromosome name
                             chromosome = chromosome.replace('CHR_', '').replace('_', '')
                             if chromosome not in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','X','Y','MT']:
                                 continue
@@ -86,8 +86,10 @@ class BiancaDataFetcher:
         return genes
     
     def fetch_noncode_lncrnas(self):
+        """Fetch lncRNA genes from local NONCODE GTF file."""
         logger.info("Fetching lncRNA genes from local NONCODE GTF file...")
         
+        # Get path from config
         gtf_file = Path(self.config['regulation_sources']['noncode']['noncode_gtf'])
         
         if not gtf_file.exists():
@@ -149,7 +151,7 @@ class BiancaDataFetcher:
                             'description': f"NONCODE lncRNA: {gene_name if gene_name else gene_id}"
                         })
                     
-                    if len(lncrnas) >= 10000: 
+                    if len(lncrnas) >= 10000:  # Limit for Bianca performance
                         break
         
         except Exception as e:
@@ -160,9 +162,10 @@ class BiancaDataFetcher:
         return lncrnas
 
     def fetch_lncipedia_lncrnas(self):
-
+        """Fetch lncRNA genes from local LNCipedia GTF file."""
         logger.info("Fetching lncRNA genes from local LNCipedia GTF file...")
         
+        # Get path from config
         gtf_file = Path(self.config['data_sources']['lncipedia']['lncipedia_gtf'])
         
         if not gtf_file.exists():
@@ -174,6 +177,7 @@ class BiancaDataFetcher:
         lncrnas = []
         
         try:
+            # LNCipedia might be uncompressed, try both
             if gtf_file.suffix == '.gz':
                 file_handle = gzip.open(gtf_file, 'rt')
             else:
@@ -205,6 +209,7 @@ class BiancaDataFetcher:
                     if gene_id:
                         chromosome = fields[0].replace('chr', '')
                         
+                        # Skip non-standard chromosomes
                         if chromosome not in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','X','Y','MT']:
                             continue
                         
@@ -239,11 +244,12 @@ class BiancaDataFetcher:
         return lncrnas
 
     def fetch_gencode_lncrnas(self):
-       
+        """Fetch lncRNA genes from all local sources: GENCODE + NONCODE + LNCipedia."""
         logger.info("Fetching lncRNA genes from all local sources...")
         
         all_lncrnas = []
         
+        # Source 1: GENCODE
         gtf_file = Path(self.config['data_sources']['gencode']['gencode_gtf'])
         
         if gtf_file.exists():
@@ -309,7 +315,7 @@ class BiancaDataFetcher:
             all_lncrnas.extend(gencode_lncrnas)
             logger.info(f"Added {len(gencode_lncrnas)} GENCODE lncRNAs")
         
-        
+        # Source 2: NONCODE
         try:
             noncode_lncrnas = self.fetch_noncode_lncrnas()
             all_lncrnas.extend(noncode_lncrnas)
@@ -317,7 +323,7 @@ class BiancaDataFetcher:
         except Exception as e:
             logger.warning(f"NONCODE parsing failed: {e}")
         
-        
+        # Source 3: LNCipedia
         try:
             lncipedia_lncrnas = self.fetch_lncipedia_lncrnas()
             all_lncrnas.extend(lncipedia_lncrnas)
@@ -325,7 +331,7 @@ class BiancaDataFetcher:
         except Exception as e:
             logger.warning(f"LNCipedia parsing failed: {e}")
         
-        # Remove duplicates based on gene_symbol (keep first option)
+        # Remove duplicates based on gene_symbol (keep first occurrence)
         seen_symbols = set()
         unique_lncrnas = []
         for lncrna in all_lncrnas:
@@ -338,9 +344,10 @@ class BiancaDataFetcher:
         return unique_lncrnas
     
     def fetch_mirdb_regulations(self):
-        
+        """Fetch miRNA-target regulations from local miRDB file."""
         logger.info("Fetching miRNA-target regulations from local miRDB file...")
         
+        # Get path from config
         mirdb_file = Path(self.config['regulation_sources']['mirdb']['mirdb_file'])
         
         if not mirdb_file.exists():
@@ -388,8 +395,10 @@ class BiancaDataFetcher:
         return regulations
     
     def fetch_targetscan_regulations(self):
+        """Fetch miRNA-target regulations from local TargetScan file."""
         logger.info("Fetching miRNA-target regulations from local TargetScan file...")
         
+        # Get path from config
         targetscan_file = Path(self.config['regulation_sources']['targetscan']['targetscan_file'])
         
         if not targetscan_file.exists():
@@ -477,6 +486,7 @@ class BiancaDataFetcher:
         return regulations
     
     def create_sample_lncrna_regulations(self):
+        """Create high-quality lncRNA regulation data from literature."""
         logger.info("Adding literature-based lncRNA regulations...")
         
         lncrna_regulations = [
@@ -530,6 +540,7 @@ class BiancaDataFetcher:
         return lncrna_regulations
     
     def fetch_all_regulations(self):
+        """Fetch regulations from all local sources."""
         logger.info("Fetching regulations from all local sources...")
         
         all_regulations = []
@@ -559,6 +570,7 @@ class BiancaDataFetcher:
         return all_regulations
     
     def fetch_hpo_terms(self):
+        """Fetch HPO terms from local OBO file."""
         logger.info("Fetching HPO terms from local OBO file...")
         
         # Get path from config
@@ -637,46 +649,16 @@ class BiancaDataFetcher:
         logger.info(f"Total HPO terms (including additional): {len(hpo_terms)}")
         return hpo_terms
     
-    def create_sample_disease_associations(self):
+    def fetch_omim_disease_associations(self):
+        """Use your existing OMIM parser - no changes needed!"""
+        from parse_omim_data import OMIMDataParser
         
-        logger.info("Creating sample disease associations...")
+        parser = OMIMDataParser()
+        omim_entries, gene_omim_mapping = parser.parse_omim_file()
+        parser.populate_database(omim_entries, gene_omim_mapping)
         
-        disease_associations = [
-            {
-                'gene_symbol': 'BRCA1',
-                'hpo_id': 'HP:0003002', 
-                'omim_id': '114480',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '7545954,8724035'
-            },
-            {
-                'gene_symbol': 'BRCA2', 
-                'hpo_id': 'HP:0003002',  
-                'omim_id': '612555',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '7545955,8724036'
-            },
-            {
-                'gene_symbol': 'TP53',
-                'hpo_id': 'HP:0002664',  
-                'omim_id': '191170',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '1565144,1924110'
-            },
-            {
-                'gene_symbol': 'EGFR',
-                'hpo_id': 'HP:0009733',  
-                'omim_id': '131550',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '2448875,15329413'
-            }
-        ]
-        
-        return disease_associations
+        logger.info(f"Loaded {len(gene_omim_mapping)} real disease associations from OMIM")
+
     
     def populate_database(self, genes=None, ncrnas=None, regulations=None, hpo_terms=None, disease_associations=None):
         """Populate database with all data."""
@@ -861,8 +843,9 @@ def main():
             hpo_terms = fetcher.fetch_hpo_terms()
             
         if args.source in ['all', 'diseases']:
-            disease_associations = fetcher.create_sample_disease_associations()
-        
+            fetcher.fetch_omim_disease_associations()
+            disease_associations = None  
+
         # Populate database
         fetcher.populate_database(genes=genes, ncrnas=ncrnas, 
                                  regulations=regulations, hpo_terms=hpo_terms,
@@ -878,13 +861,13 @@ def main():
         omim_count = conn.execute("SELECT COUNT(*) FROM omim_entries").fetchone()[0]
         disease_count = conn.execute("SELECT COUNT(*) FROM gene_disease_associations").fetchone()[0]
         
-        print(f" Database populated with:")
-        print(f" Protein-coding genes: {gene_count}")
-        print(f" ncRNA genes: {ncrna_count}")
-        print(f" Regulations: {regulation_count}")
-        print(f" HPO terms: {hpo_count}")
-        print(f" OMIM entries: {omim_count}")
-        print(f" Disease associations: {disease_count}")
+        print(f" Database populated successfully!")
+        print(f"  • Protein-coding genes: {gene_count}")
+        print(f"  • ncRNA genes: {ncrna_count}")
+        print(f"  • Regulations: {regulation_count}")
+        print(f"  • HPO terms: {hpo_count}")
+        print(f"  • OMIM entries: {omim_count}")
+        print(f"  • Disease associations: {disease_count}")
         
         conn.close()
         
