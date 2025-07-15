@@ -637,47 +637,16 @@ class BiancaDataFetcher:
         logger.info(f"Total HPO terms (including additional): {len(hpo_terms)}")
         return hpo_terms
     
-    def create_sample_disease_associations(self):
-        
-        logger.info("Creating sample disease associations...")
-        
-        disease_associations = [
-            {
-                'gene_symbol': 'BRCA1',
-                'hpo_id': 'HP:0003002', 
-                'omim_id': '114480',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '7545954,8724035'
-            },
-            {
-                'gene_symbol': 'BRCA2', 
-                'hpo_id': 'HP:0003002',  
-                'omim_id': '612555',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '7545955,8724036'
-            },
-            {
-                'gene_symbol': 'TP53',
-                'hpo_id': 'HP:0002664',  
-                'omim_id': '191170',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '1565144,1924110'
-            },
-            {
-                'gene_symbol': 'EGFR',
-                'hpo_id': 'HP:0009733',  
-                'omim_id': '131550',
-                'association_type': 'causative',
-                'evidence_level': 'experimental',
-                'pubmed_ids': '2448875,15329413'
-            }
-        ]
-        
-        return disease_associations
+    def fetch_omim_disease_associations(self):
+        """Use your existing OMIM parser - no changes needed!"""
+        from parse_omim_data import OMIMDataParser
     
+        parser = OMIMDataParser()
+        omim_entries, gene_omim_mapping = parser.parse_omim_file()
+        parser.populate_database(omim_entries, gene_omim_mapping)
+        
+        logger.info(f"Loaded {len(gene_omim_mapping)} real disease associations from OMIM")
+        
     def populate_database(self, genes=None, ncrnas=None, regulations=None, hpo_terms=None, disease_associations=None):
         """Populate database with all data."""
         logger.info("Populating database...")
@@ -861,7 +830,8 @@ def main():
             hpo_terms = fetcher.fetch_hpo_terms()
             
         if args.source in ['all', 'diseases']:
-            disease_associations = fetcher.create_sample_disease_associations()
+            fetcher.fetch_omim_disease_associations()
+            disease_associations = None
         
         # Populate database
         fetcher.populate_database(genes=genes, ncrnas=ncrnas, 
