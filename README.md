@@ -12,11 +12,7 @@ The user can search gene to ncRNA and vice versa. The user can also search disea
 
 In command line: 
 
-module load bioinfo-tools
-
-module load python/3.9.5
-
-module load sqlite/3.34.0
+module load bioinfo-tools python/3.9.5 sqlite/3.34.0
 
 python database_setup.py (To create database)
 
