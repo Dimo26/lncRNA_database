@@ -80,5 +80,9 @@ This code has NCRNADatabase which is a class thar contains the search function. 
 ### parse_omim_data.py
 It parses information from OMIM and combines it in the database schema for linking disease associations with the genes in the database.  
 
+### gene_mapper.py
+Due to the difference in each and every database where biomart, ensembl, mirdb all define the genes differently. I wanted the user to search genes using gene names rather than ensembl ID etc. In order to do so, the gene_mapper maps the names in ensmebl with the information about the corresponding ncRNA by using ncbi gene info. 
+
+
 ## References 
 Nemeth, K., Bayraktar, R., Ferracin, M. et al. 2024. Non-coding RNAs in disease: from mechanisms to therapeutics. Nat Rev Genet 25, 211–232.
