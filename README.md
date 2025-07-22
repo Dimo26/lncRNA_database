@@ -92,3 +92,21 @@ Due to the difference in each and every database where biomart, ensembl, mirdb a
 
 ## References 
 Nemeth, K., Bayraktar, R., Ferracin, M. et al. 2024. Non-coding RNAs in disease: from mechanisms to therapeutics. Nat Rev Genet 25, 211–232.
+
+Kinsella, R. J., Kähäri, A., Haider, S., Zamora, J., Proctor, G., Spudich, G., Almeida-King, J., Staines, D., Derwent, P., Kerhornou, A., Kersey, P., & Flicek, P. 2011. Ensembl BioMarts: a hub for data retrieval across taxonomic space. Database: the journal of biological databases and curation, 2011, bar030.
+
+Garth R. Brown, Vichet Hem, Kenneth S. Katz, Michael Ovetsky, Craig Wallin, Olga Ermolaeva, Igor Tolstoy, Tatiana Tatusova, Kim D. Pruitt, Donna R. Maglott, Terence D. Murphy. 2015. Gene: a gene-centered information resource at NCBI, Nucleic Acids Research. Volume 43. Issue D1. p. D36–D42.
+
+Frankish A, Diekhans M, Ferreira AM, Johnson R, Jungreis I, Loveland J, Mudge JM, Sisu C, Wright J, Armstrong J, Barnes I, Berry A, Bignell A, Carbonell Sala S, Chrast J, Cunningham F, Di Domenico T, Donaldson S, Fiddes IT, García Girón C, Gonzalez JM, Grego T, Hardy M, Hourlier T, Hunt T, Izuogu OG, Lagarde J, Martin FJ, Martínez L, Mohanan S, Muir P, Navarro FCP, Parker A, Pei B, Pozo F, Ruffier M, Schmitt BM, Stapleton E, Suner MM, Sycheva I, Uszczynska-Ratajczak B, Xu J, Yates A, Zerbino D, Zhang Y, Aken B, Choudhary JS, Gerstein M, Guigó R, Hubbard TJP, Kellis M, Paten B, Reymond A, Tress ML, Flicek P. 2019. GENCODE reference annotation for the human and mouse genomes. Nucleic Acids Research: 47(D1): D766-D773.
+
+Volders PJ, Verheggen K, Menschaert G, Vandepoele K, Martens L, Vandesompele J, Mestdagh P. 2015. An update on LNCipedia: a database for annotated human lncRNA sequences. Nucleic Acids research 43: D174-D180. 
+
+Hamosh, A., Scott, A. F., Amberger, J. S., Bocchini, C. A., & McKusick, V. A. 2005. Online Mendelian Inheritance in Man (OMIM), a knowledgebase of human genes and genetic disorders. Nucleic acids research, 33 (Database issue), D514–D517. 
+
+Robinson, P. N., Köhler, S., Bauer, S., Seelow, D., Horn, D., & Mundlos, S. 2008. The Human Phenotype Ontology: a tool for annotating and analyzing human hereditary disease. American journal of human genetics, 83(5), 610–615.
+  
+Liu, C., Bai, B., Skogerbø, G., Cai, L., Deng, W., Zhang, Y., Bu, D., Zhao, Y., & Chen, R. 2005. NONCODE: an integrated knowledge database of non-coding RNAs. Nucleic acids research, 33(Database issue), D112–D115. 
+
+Yuhao Chen, Xiaowei Wang. 2020 miRDB: an online database for prediction of functional microRNA targets, Nucleic Acids Research: 48, D1:D127–D131.
+
+McGeary, S. E., Lin, K. S., Shi, C. Y., Pham, T. M., Bisaria, N., Kelley, G. M., & Bartel, D. P. 2019. The biochemical basis of microRNA targeting efficacy. Science (New York, N.Y.), 366(6472).
