@@ -51,6 +51,12 @@ In the configuration file you can find all the sources that contribute to popula
 
 #### Database sources 
 
+General_genes_mart: 
+
+Gene_info: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz   
+  
+Gene2refseq: https://ftp.ncbi.nlm.nih.gov/gene/DATA/Gene2refseq
+
 Gencode gtf: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.long_noncoding_RNAs.gtf.gz
 
 Gencode lncrna fasta: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.lncRNA_transcripts.fa.gz
