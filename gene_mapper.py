@@ -1,5 +1,5 @@
 """
-Enhanced gene symbol mapper with gene2refseq integration for comprehensive mappings
+ Gene symbol mapper with gene2refseq integration and mappings
 """
 
 import sqlite3
