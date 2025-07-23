@@ -1,27 +1,26 @@
+
 database:
   path: "database"
   name: "ncrna_regulation_db.sqlite"
 
 data_sources:
-
   general_genes_mart: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/general_genes_mart.txt"
+  gene_info: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/gene_info.gz"
+  gene2refseq: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/gene2refseq.gz"
 
   gencode:
     gencode_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/gencode/gencode.v44.long_noncoding_RNAs.gtf.gz"
     gencode_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/gencode/gencode.v44.lncRNA_transcripts.fa.gz"
     timeout: 20
 
-  # LNCipedia data 
   lncipedia:
     lncipedia_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.gtf"
     lncipedia_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.fa"
     timeout: 20
 
-  # OMIM data
   omim_data:
     mart_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/mart_export_OMIM.txt"
 
-  # HPO data
   hpo:
     hpo_obo: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/hpo/hp.obo"
 
@@ -29,27 +28,48 @@ data_sources:
   rate_limit: 15  
   retry_delay: 1 
 
-# REGULATION SOURCES 
 regulation_sources:
-
   noncode:
     noncode_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/noncode/lncrna.fa.gz"
     noncode_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/noncode/lncrna.gtf.gz"
     
-  # miRDB prediction data
   mirdb:
     mirdb_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/mirdb/predictions.txt.gz"
   
-  # TargetScan prediction data
   targetscan:
-    targetscan_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/Database_sources/data/regulation/targetscan/targets.zip"
+    targetscan_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/targetscan/targets.zip"
 
-# Search settings
+# Quality and filtering thresholds
+thresholds:
+  mirdb_score_threshold: 80
+  targetscan_context_score_threshold: -0.2
+  confidence_threshold: 0.7
+  
+# Optional limits (set to 0 or null for no limits)
+limits:
+  max_genes_per_source: 0
+  max_ncrnas_per_source: 0
+  max_regulations_per_source: 0
+  max_hpo_terms: 0
+
 search:
   max_results: 1000
   confidence_threshold: 0.7
 
-# Bianca-specific settings
+search_settings:
+  case_sensitive: false
+  fuzzy_matching: true
+  max_variations_per_search: 20
+  enable_pattern_search: true
+  min_pattern_length: 3
+
+mapping_settings:
+  rebuild_interval_hours: 24
+  include_refseq_mappings: true
+  include_synonyms: true
+  case_insensitive_mappings: true
+  max_mapping_variations: 50
+
 bianca:
   modules:
     - "bioinfo-tools"
@@ -59,7 +79,6 @@ bianca:
   time: "08:00:00"
   memory: "16GB"
 
-# Logging
 logging:
   level: "INFO"
   file: "logs/ncrna_database.log"
