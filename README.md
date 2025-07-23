@@ -10,29 +10,6 @@ The database has been designed to be compatable with Bianca UPPMAX. The database
 
 The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv folder where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
 
-In command line: 
-
-module load bioinfo-tools
-
-module load python/3.9.5
-
-module load sqlite/3.34.0
-
-python database_setup.py (To create database)
-
-python data_fetcher.py  (To fetch the data from files)
-
-python search_functions.py --search-type stats (to get database statistics)
-
-python search_functions.py --gene --search-type gene-to-ncrna 
-
-python search_functions.py --ncrna --search-type ncrna-to-gene
-
-python search_functions.py --disease name --search-type disease 
-
-adding --export csv to the end of python search_functions.py creates a csv file of the search result which is directed to results file in the directory. 
-
-
 ## Database python files
 A general description of the codes provided in each file and the functionality. 
 There is a wide potential with future applications of this code. 
@@ -51,12 +28,15 @@ As the file name describes this python code contains the database setup and crea
 Image 1. ER diagram of the database schema with the tables NC-RNA genes, Regulations, Regulation details, Genes, HPO terms, OMIM entries and Gene disease associations. (Created with ERDplus.com, 2023)
 
 ### config.yaml 
-In the configuration file you can find all the sources that contribute to populating the database. Some sources include both fasta and gtf formats. However, the code uses GTF files only. Some files come from sources as zipped or text files of which are taken care of in the code itself to access the content. The first data source Ensembl belonging to Homo sapians GRCh38. Gen code was used to extract information about long noncoding RNAs and lncipedia was used for human transcripts. Disease associations information are from HPO and OMIM. Regulation and prediction sources include Noncode, Mirdb and Targetscan. The database can be improved with additional sources of which can be parsed in the data fetcher code. Since the database needs to be applied for clinical and reasearch use in Bianca all the soruces have been downloaded to a specific directory allowing the database to function properly offline. The urls for the different databases are included in the readme to provide information about the sources and versions of the files downloaded. 
+In the configuration file you can find all the sources that contribute to populating the database. Some sources include both fasta and gtf formats. However, the code uses GTF files only. Some files come from sources as zipped or text files of which are taken care of in the code itself to access the content. GenCode was used to extract information about long noncoding RNAs specifically annotations, lncipedia was used for human transcripts. Disease associations and phenotype information are from HPO and OMIM. Regulation and prediction sources include Noncode, Mirdb and Targetscan. The database can be improved with additional sources of which can be parsed in the data fetcher code. Since the database needs to be applied for clinical and reasearch use in Bianca all the soruces have been downloaded to a specific directory allowing the database to function properly offline. The urls for the different databases are included in the readme to provide information about the sources and versions of the files downloaded. 
 
 #### Database sources 
-ensembl gtf: https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.GRCh38.110.gtf.gz
 
-ensembl fasta: https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/ncrna/Homo_sapiens.GRCh38.ncrna.fa.gz
+General_genes_mart: 
+
+Gene_info: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz   
+  
+Gene2refseq: https://ftp.ncbi.nlm.nih.gov/gene/DATA/Gene2refseq
 
 Gencode gtf: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.long_noncoding_RNAs.gtf.gz
 
@@ -66,7 +46,7 @@ Lncipedia fasta url: https://lncipedia.org/downloads/lncipedia_5_0/full-database
 
 Lncipedia gtf_url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0_hg38.gtf
 
-OMIM mart file: file found through directory 
+OMIM mart file found through directory downloaded from ensembl biomart: https://www.ensembl.org/biomart/martview/d32f188e084d91493eadd4a96965194d
 
 HPO obo: https://raw.githubusercontent.com/obophenotype/human-phenotype-ontology/master/hp.obo
 
@@ -87,5 +67,27 @@ This code has NCRNADatabase which is a class thar contains the search function. 
 ### parse_omim_data.py
 It parses information from OMIM and combines it in the database schema for linking disease associations with the genes in the database.  
 
+### gene_mapper.py
+Due to the difference in each and every database where biomart, ensembl, mirdb all define the genes differently. I wanted the user to search genes using gene names rather than ensembl ID etc. In order to do so, the gene_mapper maps the names in ensmebl with the information about the corresponding ncRNA by using ncbi gene info. 
+
+
 ## References 
 Nemeth, K., Bayraktar, R., Ferracin, M. et al. 2024. Non-coding RNAs in disease: from mechanisms to therapeutics. Nat Rev Genet 25, 211–232.
+
+Kinsella, R. J., Kähäri, A., Haider, S., Zamora, J., Proctor, G., Spudich, G., Almeida-King, J., Staines, D., Derwent, P., Kerhornou, A., Kersey, P., & Flicek, P. 2011. Ensembl BioMarts: a hub for data retrieval across taxonomic space. Database: the journal of biological databases and curation, 2011, bar030.
+
+Garth R. Brown, Vichet Hem, Kenneth S. Katz, Michael Ovetsky, Craig Wallin, Olga Ermolaeva, Igor Tolstoy, Tatiana Tatusova, Kim D. Pruitt, Donna R. Maglott, Terence D. Murphy. 2015. Gene: a gene-centered information resource at NCBI, Nucleic Acids Research. Volume 43. Issue D1. p. D36–D42.
+
+Frankish A, Diekhans M, Ferreira AM, Johnson R, Jungreis I, Loveland J, Mudge JM, Sisu C, Wright J, Armstrong J, Barnes I, Berry A, Bignell A, Carbonell Sala S, Chrast J, Cunningham F, Di Domenico T, Donaldson S, Fiddes IT, García Girón C, Gonzalez JM, Grego T, Hardy M, Hourlier T, Hunt T, Izuogu OG, Lagarde J, Martin FJ, Martínez L, Mohanan S, Muir P, Navarro FCP, Parker A, Pei B, Pozo F, Ruffier M, Schmitt BM, Stapleton E, Suner MM, Sycheva I, Uszczynska-Ratajczak B, Xu J, Yates A, Zerbino D, Zhang Y, Aken B, Choudhary JS, Gerstein M, Guigó R, Hubbard TJP, Kellis M, Paten B, Reymond A, Tress ML, Flicek P. 2019. GENCODE reference annotation for the human and mouse genomes. Nucleic Acids Research: 47(D1): D766-D773.
+
+Volders PJ, Verheggen K, Menschaert G, Vandepoele K, Martens L, Vandesompele J, Mestdagh P. 2015. An update on LNCipedia: a database for annotated human lncRNA sequences. Nucleic Acids research 43: D174-D180. 
+
+Hamosh, A., Scott, A. F., Amberger, J. S., Bocchini, C. A., & McKusick, V. A. 2005. Online Mendelian Inheritance in Man (OMIM), a knowledgebase of human genes and genetic disorders. Nucleic acids research, 33 (Database issue), D514–D517. 
+
+Robinson, P. N., Köhler, S., Bauer, S., Seelow, D., Horn, D., & Mundlos, S. 2008. The Human Phenotype Ontology: a tool for annotating and analyzing human hereditary disease. American journal of human genetics, 83(5), 610–615.
+  
+Liu, C., Bai, B., Skogerbø, G., Cai, L., Deng, W., Zhang, Y., Bu, D., Zhao, Y., & Chen, R. 2005. NONCODE: an integrated knowledge database of non-coding RNAs. Nucleic acids research, 33(Database issue), D112–D115. 
+
+Yuhao Chen, Xiaowei Wang. 2020 miRDB: an online database for prediction of functional microRNA targets, Nucleic Acids Research: 48, D1:D127–D131.
+
+McGeary, S. E., Lin, K. S., Shi, C. Y., Pham, T. M., Bisaria, N., Kelley, G. M., & Bartel, D. P. 2019. The biochemical basis of microRNA targeting efficacy. Science (New York, N.Y.), 366(6472).

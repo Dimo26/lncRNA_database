@@ -424,6 +424,7 @@ class BiancaDataFetcher:
         return hpo_terms
     
     def fetch_omim_disease_associations(self):
+<<<<<<< HEAD
         """Fetch disease associations from OMIM parser."""
         logger.info("Fetching disease associations from OMIM data...")
         
@@ -620,6 +621,17 @@ class BiancaDataFetcher:
         
         return successful_regs
     
+=======
+        """Use your existing OMIM parser - no changes needed!"""
+        from parse_omim_data import OMIMDataParser
+    
+        parser = OMIMDataParser()
+        omim_entries, gene_omim_mapping = parser.parse_omim_file()
+        parser.populate_database(omim_entries, gene_omim_mapping)
+        
+        logger.info(f"Loaded {len(gene_omim_mapping)} real disease associations from OMIM")
+        
+>>>>>>> 86a27c4815d4933b4b9622b1e5e6702d1bbdaf04
     def populate_database(self, genes=None, ncrnas=None, regulations=None, hpo_terms=None, disease_associations=None):
         """Populate database with optimized batch processing."""
         logger.info("Populating database with optimized batch processing...")
@@ -744,7 +756,12 @@ def main():
             hpo_terms = fetcher.fetch_hpo_terms()
             
         if args.source in ['all', 'diseases']:
+<<<<<<< HEAD
             disease_associations = fetcher.fetch_omim_disease_associations()
+=======
+            fetcher.fetch_omim_disease_associations()
+            disease_associations = None
+>>>>>>> 86a27c4815d4933b4b9622b1e5e6702d1bbdaf04
         
 
         fetcher.populate_database(genes=genes, ncrnas=ncrnas, 
