@@ -16,6 +16,7 @@ data_sources:
   lncipedia:
     lncipedia_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.gtf"
     lncipedia_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.fa"
+    lncipedia_bed: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_5_2_hg38.bed"
     timeout: 20
 
   omim_data:
