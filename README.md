@@ -43,9 +43,7 @@ Gencode gtf: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_4
 Gencode lncrna fasta: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.lncRNA_transcripts.fa.gz
 
 Lncipedia fasta url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0.fasta
-
 Lncipedia gtf_url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0_hg38.gtf
-Lincipedia BED: https://lncipedia.org/downloads/lncipedia_5_2/full-database/lncipedia_5_2_hg38.bed
 
 OMIM mart file found through directory downloaded from ensembl biomart: https://www.ensembl.org/biomart/martview/d32f188e084d91493eadd4a96965194d
 
