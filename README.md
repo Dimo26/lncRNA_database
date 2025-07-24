@@ -10,6 +10,8 @@ The database has been designed to be compatable with Bianca UPPMAX. The database
 
 The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv folder where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
 
+Although the intention was to create a database for lncRNAs the database currently stores information about ncRNAs with room for the addtion of a lncRNA regulation source to be fetched like the other sources found in the data fetcher and search functions. 
+
 ## Database python files
 A general description of the codes provided in each file and the functionality. 
 There is a wide potential with future applications of this code. 
