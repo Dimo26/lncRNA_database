@@ -176,7 +176,7 @@ class BiancaDataFetcher:
                     'hsa-' + gene_symbol.replace('hsa-', '')
                 ])
             
-            # Only call mapper if it exists and we haven't exceeded limits  
+            # Only call mapper 
             if self.gene_mapper and len(variations) < max_variations:
                 try:
                     standard_symbol = self.gene_mapper.find_ncrna_symbol(gene_symbol)
@@ -185,7 +185,7 @@ class BiancaDataFetcher:
                 except:
                     pass
             
-            # Add to lookup (limit variations)
+            # Add to lookup 
             for var in variations[:max_variations]:
                 if var and var not in self.ncrna_lookup:
                     self.ncrna_lookup[var] = ncrna_id
