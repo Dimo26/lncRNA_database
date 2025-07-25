@@ -13,7 +13,7 @@ from tqdm import tqdm
 import argparse
 from collections import defaultdict
 
-# Import enhanced gene mapper
+
 from gene_mapper import PersistentGeneMapper
 
 # Simple logging setup
@@ -57,47 +57,138 @@ class BiancaDataFetcher:
                 self.gene_mapper = None
     
     def _build_lookup_dictionaries(self):
-        """Build fast lookup dictionaries for genes and ncRNAs"""
+        """Build fast lookup dictionaries for genes and ncRNAs - OPTIMIZED VERSION"""
         logger.info("Building fast lookup dictionaries...")
+        
+        max_gene_mappings = self.limits.get('max_gene_mappings', 50000)  # Reduced default
+        max_ncrna_mappings = self.limits.get('max_ncrna_mappings', 10000)  # Reduced default
+        max_variations = self.limits.get('max_lookup_variations', 3)  # Reduced default
         
         conn = sqlite3.connect(self.db_file)
         try:
-            # Build gene lookup
-            cursor = conn.execute("SELECT gene_id, gene_symbol FROM genes")
-            for gene_id, gene_symbol in cursor.fetchall():
-                # Store multiple variations for fast lookup
-                variations = [gene_symbol, gene_symbol.upper(), gene_symbol.lower()]
-                if self.gene_mapper:
-                    try:
-                        mapped_variations = self.gene_mapper.get_all_variations(gene_symbol)
-                        variations.extend(mapped_variations)
-                    except:
-                        pass
-                
-                for var in variations:
-                    if var and var not in self.gene_lookup:
-                        self.gene_lookup[var] = gene_id
+            # Build gene lookup with CHUNKED processing
+            logger.info("Processing gene mappings...")
+            cursor = conn.execute("SELECT gene_id, gene_symbol FROM genes LIMIT {}".format(max_gene_mappings))
             
-            # Build ncRNA lookup
-            cursor = conn.execute("SELECT ncrna_id, gene_symbol FROM ncrna_genes")
-            for ncrna_id, gene_symbol in cursor.fetchall():
-                variations = [gene_symbol, gene_symbol.upper(), gene_symbol.lower()]
-                if self.gene_mapper:
-                    try:
-                        mapped_variations = self.gene_mapper.get_all_variations(gene_symbol)
-                        variations.extend(mapped_variations)
-                    except:
-                        pass
+            gene_count = 0
+            batch_size = 1000
+            batch_genes = []
+            
+            for gene_id, gene_symbol in cursor:
+                batch_genes.append((gene_id, gene_symbol))
                 
-                for var in variations:
-                    if var and var not in self.ncrna_lookup:
-                        self.ncrna_lookup[var] = ncrna_id
+                if len(batch_genes) >= batch_size:
+                    self._process_gene_batch(batch_genes, max_variations)
+                    gene_count += len(batch_genes)
+                    batch_genes = []
+                    
+                    if gene_count % 5000 == 0:
+                        logger.info("Processed {} genes...".format(gene_count))
+                    
+                    if gene_count >= max_gene_mappings:
+                        break
+            
+            # Process remaining batch
+            if batch_genes:
+                self._process_gene_batch(batch_genes, max_variations)
+                gene_count += len(batch_genes)
+            
+            # Build ncRNA lookup with CHUNKED processing  
+            logger.info("Processing ncRNA mappings...")
+            cursor = conn.execute("SELECT ncrna_id, gene_symbol FROM ncrna_genes LIMIT {}".format(max_ncrna_mappings))
+            
+            ncrna_count = 0
+            batch_ncrnas = []
+            
+            for ncrna_id, gene_symbol in cursor:
+                batch_ncrnas.append((ncrna_id, gene_symbol))
+                
+                if len(batch_ncrnas) >= batch_size:
+                    self._process_ncrna_batch(batch_ncrnas, max_variations)
+                    ncrna_count += len(batch_ncrnas)
+                    batch_ncrnas = []
+                    
+                    if ncrna_count % 2000 == 0:
+                        logger.info("Processed {} ncRNAs...".format(ncrna_count))
+                    
+                    if ncrna_count >= max_ncrna_mappings:
+                        break
+            
+            # Process remaining batch
+            if batch_ncrnas:
+                self._process_ncrna_batch(batch_ncrnas, max_variations)
+                ncrna_count += len(batch_ncrnas)
             
             logger.info("Built lookup dictionaries: {} gene variations, {} ncRNA variations".format(
                 len(self.gene_lookup), len(self.ncrna_lookup)))
                 
         finally:
             conn.close()
+
+    def _process_gene_batch(self, batch_genes, max_variations):
+        """Process a batch of genes efficiently"""
+        for gene_id, gene_symbol in batch_genes:
+            if not gene_symbol:
+                continue
+                
+            # Create basic variations without expensive mapper calls
+            variations = [
+                gene_symbol,
+                gene_symbol.upper(), 
+                gene_symbol.lower(),
+                gene_symbol.replace('-', ''),
+                gene_symbol.replace('_', '')
+            ]
+            
+            # Only call mapper if it exists and we haven't exceeded limits
+            if self.gene_mapper and len(variations) < max_variations:
+                try:
+                    # Quick lookup - avoid expensive operations
+                    standard_symbol = self.gene_mapper.find_gene_symbol(gene_symbol)
+                    if standard_symbol and standard_symbol != gene_symbol:
+                        variations.append(standard_symbol)
+                except:
+                    pass
+            
+            # Add to lookup (limit variations to prevent memory bloat)
+            for var in variations[:max_variations]:
+                if var and var not in self.gene_lookup:
+                    self.gene_lookup[var] = gene_id
+
+    def _process_ncrna_batch(self, batch_ncrnas, max_variations):
+        """Process a batch of ncRNAs efficiently"""
+        for ncrna_id, gene_symbol in batch_ncrnas:
+            if not gene_symbol:
+                continue
+                
+            # Create basic variations without expensive mapper calls
+            variations = [
+                gene_symbol,
+                gene_symbol.upper(),
+                gene_symbol.lower()
+            ]
+            
+            # Add miRNA-specific variations if applicable
+            if 'mir' in gene_symbol.lower():
+                variations.extend([
+                    gene_symbol.replace('mir', 'miR'),
+                    gene_symbol.replace('miR', 'mir'),
+                    'hsa-' + gene_symbol.replace('hsa-', '')
+                ])
+            
+            # Only call mapper if it exists and we haven't exceeded limits  
+            if self.gene_mapper and len(variations) < max_variations:
+                try:
+                    standard_symbol = self.gene_mapper.find_ncrna_symbol(gene_symbol)
+                    if standard_symbol and standard_symbol != gene_symbol:
+                        variations.append(standard_symbol)
+                except:
+                    pass
+            
+            # Add to lookup (limit variations)
+            for var in variations[:max_variations]:
+                if var and var not in self.ncrna_lookup:
+                    self.ncrna_lookup[var] = ncrna_id
     
     def fetch_genes_from_local_biomart(self, limit=None):
         """Fetch genes from local BioMart file."""
@@ -110,7 +201,7 @@ class BiancaDataFetcher:
             return []
         
         genes = []
-        max_genes = limit or self.limits.get('max_genes_per_source', 0)
+        max_genes = limit or self.limits.get('max_genes_per_source', 50000)
         
         try:
             with open(biomart_file, 'r', encoding='utf-8') as f:
@@ -161,7 +252,7 @@ class BiancaDataFetcher:
         logger.info("Fetching lncRNA genes from all local sources...")
         
         all_lncrnas = []
-        max_ncrnas = self.limits.get('max_ncrnas_per_source', 0)
+        max_ncrnas = self.limits.get('max_ncrnas_per_source', 25000)
         
         # Process GENCODE
         gtf_file = Path(self.config['data_sources']['gencode']['gencode_gtf'])
@@ -245,7 +336,7 @@ class BiancaDataFetcher:
             score_threshold = self.thresholds.get('mirdb_score_threshold', 80)
         
         regulations = []
-        max_regs = self.limits.get('max_regulations_per_source', 0)
+        max_regs = self.limits.get('max_regulations_per_source', 100000)
         
         try:
             with gzip.open(mirdb_file, 'rt') as f:
@@ -298,7 +389,7 @@ class BiancaDataFetcher:
             context_threshold = self.thresholds.get('targetscan_context_score_threshold', -0.2)
         
         regulations = []
-        max_regs = self.limits.get('max_regulations_per_source', 0)
+        max_regs = self.limits.get('max_regulations_per_source', 100000)
         
         try:
             # Handle ZIP file
@@ -346,7 +437,359 @@ class BiancaDataFetcher:
             len(regulations), context_threshold))
         return regulations
     
-    def fetch_all_regulations(self, mirdb_threshold=None, targetscan_threshold=None):
+    def fetch_evlncrnas_regulations(self, confidence_threshold=None):
+        """Fetch lncRNA-target regulations from EVLncRNAs3 data."""
+        logger.info("Fetching lncRNA-target regulations from EVLncRNAs3...")
+        
+        evlncrnas_file = Path(self.config['regulation_sources']['evlncrnas']['evlncrnas_file'])
+        
+        if not evlncrnas_file.exists():
+            logger.error("EVLncRNAs file not found: {}".format(evlncrnas_file))
+            return []
+        
+        if confidence_threshold is None:
+            confidence_threshold = self.thresholds.get('evlncrnas_confidence_threshold', 0.5)
+        
+        regulations = []
+        max_regs = self.limits.get('max_regulations_per_source', 100000)
+        
+        try:
+            import pandas as pd
+            
+            with zipfile.ZipFile(evlncrnas_file, 'r') as zip_ref:
+                file_list = zip_ref.namelist()
+                logger.info("Files in EVLncRNAs ZIP: {}".format(file_list))
+                
+                # Try Excel files first, then text files
+                excel_files = [f for f in file_list if f.endswith(('.xls', '.xlsx')) 
+                              and not f.startswith('__MACOSX') and not '._' in f]
+                text_files = [f for f in file_list if f.endswith(('.csv', '.tsv', '.txt', '.dat')) 
+                             and not f.startswith('__MACOSX') and not '._' in f]
+                
+                all_files = excel_files + text_files
+                
+                if not all_files:
+                    logger.warning("No readable data files found in EVLncRNAs ZIP")
+                    return []
+                
+                # Try each file until we find one that works
+                for data_file in all_files:
+                    logger.info("Trying EVLncRNAs file: {}".format(data_file))
+                    
+                    try:
+                        if data_file.endswith(('.xls', '.xlsx')):
+                            # Read Excel file with error handling
+                            try:
+                                with zip_ref.open(data_file) as f:
+                                    # Try pandas with different engines
+                                    try:
+                                        df = pd.read_excel(f, engine='openpyxl' if data_file.endswith('.xlsx') else 'xlrd')
+                                    except ImportError as e:
+                                        logger.warning("Excel library not available ({}), skipping Excel file: {}".format(e, data_file))
+                                        continue
+                                    except Exception as e:
+                                        logger.warning("Could not read Excel file {}: {}".format(data_file, e))
+                                        continue
+                                    
+                                    if df.empty or len(df.columns) < 2:
+                                        logger.info("Excel file {} is empty or has insufficient columns".format(data_file))
+                                        continue
+                                    
+                                    headers = [h.strip().lower() for h in df.columns]
+                                    logger.info("Excel headers found: {}".format(headers[:10]))
+                                    
+                                    # Find relevant columns (more flexible matching)
+                                    lncrna_col = None
+                                    target_col = None
+                                    regulation_col = None
+                                    
+                                    for i, header in enumerate(headers):
+                                        if any(keyword in header for keyword in ['lncrna', 'longnoncoding', 'rna_name', 'regulator', 'symbol']):
+                                            if lncrna_col is None:  # Take first match
+                                                lncrna_col = i
+                                        elif any(keyword in header for keyword in ['target', 'gene']) and 'lncrna' not in header:
+                                            if target_col is None:  # Take first match
+                                                target_col = i
+                                        elif any(keyword in header for keyword in ['regulation', 'effect', 'direction', 'function']):
+                                            if regulation_col is None:  # Take first match
+                                                regulation_col = i
+                                    
+                                    # If we can't find proper columns, try first two columns as defaults
+                                    if lncrna_col is None and len(df.columns) >= 1:
+                                        lncrna_col = 0
+                                        logger.info("Using first column as lncRNA column")
+                                    if target_col is None and len(df.columns) >= 2:
+                                        target_col = 1  
+                                        logger.info("Using second column as target column")
+                                    
+                                    if lncrna_col is None or target_col is None:
+                                        logger.info("Could not identify required columns in {}".format(data_file))
+                                        continue
+                                    
+                                    logger.info("Using Excel columns - lncRNA: {}, target: {}, regulation: {}".format(
+                                        lncrna_col, target_col, regulation_col))
+                                    
+                                    # Process rows with better error handling
+                                    for idx, row in df.iterrows():
+                                        if max_regs > 0 and len(regulations) >= max_regs:
+                                            break
+                                        
+                                        try:
+                                            lncrna_symbol = str(row.iloc[lncrna_col]).strip()
+                                            target_symbol = str(row.iloc[target_col]).strip()
+                                            
+                                            # Skip invalid entries
+                                            if lncrna_symbol in ['nan', 'NaN', ''] or target_symbol in ['nan', 'NaN', '']:
+                                                continue
+                                            if not lncrna_symbol or not target_symbol:
+                                                continue
+                                            
+                                            # Determine regulation type
+                                            regulation_type = 'unknown'
+                                            if regulation_col is not None and regulation_col < len(row):
+                                                reg_text = str(row.iloc[regulation_col]).lower()
+                                                if any(word in reg_text for word in ['positive', 'activate', 'enhance', 'promote', 'up']):
+                                                    regulation_type = 'positive'
+                                                elif any(word in reg_text for word in ['negative', 'inhibit', 'repress', 'suppress', 'down']):
+                                                    regulation_type = 'negative'
+                                            
+                                            regulations.append({
+                                                'ncrna_symbol': lncrna_symbol,
+                                                'target_symbol': target_symbol,
+                                                'regulation_type': regulation_type,
+                                                'mechanism': 'transcriptional',
+                                                'evidence': 'experimental',
+                                                'pmids': 'EVLncRNAs3.0',
+                                                'confidence_score': confidence_threshold
+                                            })
+                                            
+                                        except Exception as e:
+                                            continue
+                                    
+                                    # If we got results from this file, break
+                                    if regulations:
+                                        logger.info("Successfully parsed {} regulations from {}".format(
+                                            len(regulations), data_file))
+                                        break
+                                        
+                            except Exception as e:
+                                logger.warning("Error processing Excel file {}: {}".format(data_file, e))
+                                continue
+                        
+                        else:
+                            # Handle text files (existing code)
+                            with zip_ref.open(data_file) as f:
+                                content = f.read().decode('utf-8', errors='ignore')
+                                lines = content.split('\n')
+                                
+                                if len(lines) < 2:
+                                    continue
+                                
+                                # Auto-detect delimiter
+                                first_line = lines[0]
+                                delimiter = '\t' if '\t' in first_line else (',' if ',' in first_line else None)
+                                
+                                if not delimiter:
+                                    continue
+                                
+                                # Parse header
+                                headers = [h.strip().lower() for h in first_line.split(delimiter)]
+                                logger.info("Headers found: {}".format(headers[:10]))
+                                
+                                # Find relevant columns
+                                lncrna_col = None
+                                target_col = None
+                                regulation_col = None
+                                
+                                for i, header in enumerate(headers):
+                                    if any(keyword in header for keyword in ['lncrna', 'longnoncoding', 'rna_name', 'regulator']):
+                                        lncrna_col = i
+                                    elif any(keyword in header for keyword in ['target', 'gene', 'symbol']) and 'lncrna' not in header:
+                                        target_col = i
+                                    elif any(keyword in header for keyword in ['regulation', 'effect', 'direction']):
+                                        regulation_col = i
+                                
+                                if lncrna_col is None or target_col is None:
+                                    logger.info("Could not find required columns in {}".format(data_file))
+                                    continue
+                                
+                                logger.info("Using columns - lncRNA: {}, target: {}, regulation: {}".format(
+                                    lncrna_col, target_col, regulation_col))
+                                
+                                # Process data lines
+                                for line_num, line in enumerate(tqdm(lines[1:], desc="Parsing {}".format(data_file))):
+                                    if not line.strip():
+                                        continue
+                                    
+                                    if max_regs > 0 and len(regulations) >= max_regs:
+                                        break
+                                    
+                                    try:
+                                        fields = line.strip().split(delimiter)
+                                        if len(fields) <= max(lncrna_col, target_col):
+                                            continue
+                                        
+                                        lncrna_symbol = fields[lncrna_col].strip()
+                                        target_symbol = fields[target_col].strip()
+                                        
+                                        if not lncrna_symbol or not target_symbol:
+                                            continue
+                                        
+                                        # Determine regulation type
+                                        regulation_type = 'unknown'
+                                        if regulation_col is not None and regulation_col < len(fields):
+                                            reg_text = fields[regulation_col].lower()
+                                            if any(word in reg_text for word in ['positive', 'activate', 'enhance', 'promote', 'up']):
+                                                regulation_type = 'positive'
+                                            elif any(word in reg_text for word in ['negative', 'inhibit', 'repress', 'suppress', 'down']):
+                                                regulation_type = 'negative'
+                                        
+                                        regulations.append({
+                                            'ncrna_symbol': lncrna_symbol,
+                                            'target_symbol': target_symbol,
+                                            'regulation_type': regulation_type,
+                                            'mechanism': 'transcriptional',
+                                            'evidence': 'experimental',
+                                            'pmids': 'EVLncRNAs3.0',
+                                            'confidence_score': confidence_threshold
+                                        })
+                                        
+                                    except Exception as e:
+                                        continue
+                                
+                                # If we got results from this file, break
+                                if regulations:
+                                    logger.info("Successfully parsed {} regulations from {}".format(
+                                        len(regulations), data_file))
+                                    break
+                                
+                    except Exception as e:
+                        logger.warning("Error parsing {}: {}".format(data_file, e))
+                        continue
+        
+        except ImportError:
+            logger.warning("pandas not available for Excel file reading")
+        except Exception as e:
+            logger.error("Error parsing EVLncRNAs: {}".format(e))
+            return []
+        
+        logger.info("Parsed {} lncRNA-target regulations from EVLncRNAs3 (threshold: {})".format(
+            len(regulations), confidence_threshold))
+        return regulations
+    
+    def fetch_lnctard_regulations(self, confidence_threshold=None):
+        """Fetch lncRNA-target regulations from lnctard2.0 data."""
+        logger.info("Fetching lncRNA-target regulations from LncTard2.0...")
+        
+        lnctard_file = Path(self.config['regulation_sources']['lnctard']['lnctard_file'])
+        
+        if not lnctard_file.exists():
+            logger.error("LncTard file not found: {}".format(lnctard_file))
+            return []
+        
+        if confidence_threshold is None:
+            confidence_threshold = self.thresholds.get('lnctard_confidence_threshold', 0.7)
+        
+        regulations = []
+        max_regs = self.limits.get('max_regulations_per_source', 100000)
+        
+        try:
+            # Handle both ZIP and text files
+            if lnctard_file.suffix == '.zip':
+                with zipfile.ZipFile(lnctard_file, 'r') as zip_ref:
+                    file_list = zip_ref.namelist()
+                    
+                    # Find the data file
+                    data_files = [f for f in file_list if f.endswith(('.txt', '.csv', '.tsv')) 
+                                 and not f.startswith('__MACOSX') and not '._' in f]
+                    
+                    if not data_files:
+                        logger.warning("No data files found in LncTard ZIP")
+                        return []
+                    
+                    data_file = data_files[0]
+                    logger.info("Processing LncTard file: {}".format(data_file))
+                    
+                    with zip_ref.open(data_file) as f:
+                        content = f.read().decode('utf-8', errors='ignore')
+                        lines = content.split('\n')
+                        
+            else:
+                # Direct text file
+                with open(lnctard_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = f.readlines()
+            
+            if not lines:
+                return []
+            
+            # Parse header
+            header_line = lines[0].strip()
+            delimiter = '\t' if '\t' in header_line else ','
+            headers = [h.strip() for h in header_line.split(delimiter)]
+            
+            logger.info("LncTard headers: {}".format(headers[:10]))
+            
+            # Expected column positions for lnctard format
+            # DiseaseName, Regulator, Target, RegulationDirection, ...
+            if len(headers) >= 4:
+                regulator_col = 1  # Regulator column
+                target_col = 2     # Target column  
+                direction_col = 3  # RegulationDirection column
+                
+                logger.info("Using LncTard columns - Regulator: {}, Target: {}, Direction: {}".format(
+                    regulator_col, target_col, direction_col))
+                
+                # Process data lines
+                for line_num, line in enumerate(tqdm(lines[1:], desc="Parsing LncTard")):
+                    if not line.strip():
+                        continue
+                    
+                    if max_regs > 0 and len(regulations) >= max_regs:
+                        break
+                    
+                    try:
+                        fields = line.strip().split(delimiter)
+                        if len(fields) <= max(regulator_col, target_col, direction_col):
+                            continue
+                        
+                        regulator = fields[regulator_col].strip()
+                        target = fields[target_col].strip()
+                        direction = fields[direction_col].strip() if direction_col < len(fields) else ''
+                        
+                        if not regulator or not target:
+                            continue
+                        
+                        # Parse regulation direction
+                        regulation_type = 'unknown'
+                        direction_lower = direction.lower()
+                        
+                        if any(word in direction_lower for word in ['positive', 'positively', 'activate', 'enhance', 'promote', 'up']):
+                            regulation_type = 'positive'
+                        elif any(word in direction_lower for word in ['negative', 'negatively', 'inhibit', 'repress', 'suppress', 'down']):
+                            regulation_type = 'negative'
+                        
+                        regulations.append({
+                            'ncrna_symbol': regulator,
+                            'target_symbol': target,
+                            'regulation_type': regulation_type,
+                            'mechanism': 'transcriptional',
+                            'evidence': 'experimental',
+                            'pmids': 'LncTard2.0',
+                            'confidence_score': confidence_threshold
+                        })
+                        
+                    except Exception as e:
+                        continue
+        
+        except Exception as e:
+            logger.error("Error parsing LncTard: {}".format(e))
+            return []
+        
+        logger.info("Parsed {} lncRNA-target regulations from LncTard2.0 (threshold: {})".format(
+            len(regulations), confidence_threshold))
+        return regulations
+    
+    def fetch_all_regulations(self, mirdb_threshold=None, targetscan_threshold=None, evlncrnas_threshold=None, lnctard_threshold=None):
         """Fetch regulations from all local sources."""
         logger.info("Fetching regulations from all local sources...")
         
@@ -365,6 +808,20 @@ class BiancaDataFetcher:
             logger.info("Added {} TargetScan regulations".format(len(targetscan_regs)))
         except Exception as e:
             logger.warning("TargetScan failed: {}".format(e))
+        
+        try:
+            evlncrnas_regs = self.fetch_evlncrnas_regulations(confidence_threshold=evlncrnas_threshold)
+            all_regulations.extend(evlncrnas_regs)
+            logger.info("Added {} EVLncRNAs regulations".format(len(evlncrnas_regs)))
+        except Exception as e:
+            logger.warning("EVLncRNAs failed: {}".format(e))
+        
+        try:
+            lnctard_regs = self.fetch_lnctard_regulations(confidence_threshold=lnctard_threshold)
+            all_regulations.extend(lnctard_regs)
+            logger.info("Added {} LncTard regulations".format(len(lnctard_regs)))
+        except Exception as e:
+            logger.warning("LncTard failed: {}".format(e))
                 
         logger.info("Total regulations from all sources: {}".format(len(all_regulations)))
         return all_regulations
@@ -381,7 +838,7 @@ class BiancaDataFetcher:
         
         hpo_terms = []
         current_term = {}
-        max_hpo = self.limits.get('max_hpo_terms', 0)
+        max_hpo = self.limits.get('max_hpo_terms', 10000)
         
         try:
             with open(obo_file, 'r') as f:
@@ -424,7 +881,6 @@ class BiancaDataFetcher:
         return hpo_terms
     
     def fetch_omim_disease_associations(self):
-<<<<<<< HEAD
         """Fetch disease associations from OMIM parser."""
         logger.info("Fetching disease associations from OMIM data...")
         
@@ -529,7 +985,19 @@ class BiancaDataFetcher:
             # Create ncRNA if not found
             if not ncrna_id:
                 try:
-                    ncrna_type = 'miRNA' if 'miR' in ncrna_symbol else 'lncRNA'
+                    # Determine ncRNA type from symbol
+                    if 'miR' in ncrna_symbol or 'mir' in ncrna_symbol:
+                        ncrna_type = 'miRNA'
+                    elif any(keyword in ncrna_symbol.upper() for keyword in ['LINC', 'LOC', 'ENSG']):
+                        ncrna_type = 'lncRNA'
+                    else:
+                        # Default based on regulation source
+                        reg_source = reg_list[0].get('pmids', '')
+                        if 'miRDB' in reg_source or 'TargetScan' in reg_source:
+                            ncrna_type = 'miRNA'
+                        else:
+                            ncrna_type = 'lncRNA'
+                    
                     conn.execute("""
                         INSERT OR IGNORE INTO ncrna_genes 
                         (ensembl_gene_id, gene_symbol, ncrna_type, ncrna_subtype, description) 
@@ -621,17 +1089,6 @@ class BiancaDataFetcher:
         
         return successful_regs
     
-=======
-        """Use your existing OMIM parser - no changes needed!"""
-        from parse_omim_data import OMIMDataParser
-    
-        parser = OMIMDataParser()
-        omim_entries, gene_omim_mapping = parser.parse_omim_file()
-        parser.populate_database(omim_entries, gene_omim_mapping)
-        
-        logger.info(f"Loaded {len(gene_omim_mapping)} real disease associations from OMIM")
-        
->>>>>>> 86a27c4815d4933b4b9622b1e5e6702d1bbdaf04
     def populate_database(self, genes=None, ncrnas=None, regulations=None, hpo_terms=None, disease_associations=None):
         """Populate database with optimized batch processing."""
         logger.info("Populating database with optimized batch processing...")
@@ -726,6 +1183,8 @@ def main():
     parser.add_argument('--limit', type=int, help='Limit number of genes to fetch (for testing)')
     parser.add_argument('--mirdb-threshold', type=float, help='miRDB score threshold (default from config)')
     parser.add_argument('--targetscan-threshold', type=float, help='TargetScan context score threshold (default from config)')
+    parser.add_argument('--evlncrnas-threshold', type=float, help='EVLncRNAs confidence threshold (default from config)')
+    parser.add_argument('--lnctard-threshold', type=float, help='LncTard confidence threshold (default from config)')
     
     args = parser.parse_args()
     
@@ -749,19 +1208,16 @@ def main():
         if args.source in ['all', 'regulations']:
             regulations = fetcher.fetch_all_regulations(
                 mirdb_threshold=args.mirdb_threshold,
-                targetscan_threshold=args.targetscan_threshold
+                targetscan_threshold=args.targetscan_threshold,
+                evlncrnas_threshold=args.evlncrnas_threshold,
+                lnctard_threshold=args.lnctard_threshold
             )
         
         if args.source in ['all', 'hpo']:
             hpo_terms = fetcher.fetch_hpo_terms()
             
         if args.source in ['all', 'diseases']:
-<<<<<<< HEAD
             disease_associations = fetcher.fetch_omim_disease_associations()
-=======
-            fetcher.fetch_omim_disease_associations()
-            disease_associations = None
->>>>>>> 86a27c4815d4933b4b9622b1e5e6702d1bbdaf04
         
 
         fetcher.populate_database(genes=genes, ncrnas=ncrnas, 
@@ -778,7 +1234,7 @@ def main():
         omim_count = conn.execute("SELECT COUNT(*) FROM omim_entries").fetchone()[0]
         disease_count = conn.execute("SELECT COUNT(*) FROM gene_disease_associations").fetchone()[0]
         
-        print("Final database statistics:")
+
         print("  Protein-coding genes: {}".format(gene_count))
         print("  ncRNA genes: {}".format(ncrna_count))
         print("  Regulations: {}".format(regulation_count))
