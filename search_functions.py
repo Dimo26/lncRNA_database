@@ -40,6 +40,7 @@ class EnhancedNCRNADatabase:
                              min_confidence=0.0,
                              mirdb_threshold=None,
                              targetscan_threshold=None,
+                             evlncrnas_threshold=None,
                              include_literature=True,
                              include_disease=True,
                              debug=False):
@@ -51,7 +52,7 @@ class EnhancedNCRNADatabase:
         
         results = self._comprehensive_gene_search(
             gene_symbol, min_confidence, mirdb_threshold, 
-            targetscan_threshold, include_literature, debug
+            targetscan_threshold, evlncrnas_threshold, include_literature, debug
         )
         
         if not results.empty and include_disease:
@@ -114,7 +115,7 @@ class EnhancedNCRNADatabase:
         logger.info("=== END DEBUG ===")
     
     def _comprehensive_gene_search(self, gene_symbol, min_confidence, mirdb_threshold, 
-                                 targetscan_threshold, include_literature, debug=False):
+                                 targetscan_threshold, evlncrnas_threshold, include_literature, debug=False):
         
         all_results = []
         search_methods = [
@@ -128,7 +129,7 @@ class EnhancedNCRNADatabase:
             logger.info("Trying search method: {}".format(method_name))
             
             results = search_func(gene_symbol, min_confidence, mirdb_threshold, 
-                                targetscan_threshold, include_literature)
+                                targetscan_threshold, evlncrnas_threshold, include_literature)
             
             if not results.empty:
                 results['search_method'] = method_name
@@ -150,23 +151,23 @@ class EnhancedNCRNADatabase:
         return pd.DataFrame()
     
     def _direct_exact_search(self, gene_symbol, min_confidence, mirdb_threshold, 
-                           targetscan_threshold, include_literature):
+                           targetscan_threshold, evlncrnas_threshold, include_literature):
         """Direct exact match search"""
         return self._execute_regulation_query(
             "g.gene_symbol = ?", [gene_symbol], min_confidence, 
-            mirdb_threshold, targetscan_threshold, include_literature
+            mirdb_threshold, targetscan_threshold, evlncrnas_threshold, include_literature
         )
     
     def _case_insensitive_search(self, gene_symbol, min_confidence, mirdb_threshold, 
-                               targetscan_threshold, include_literature):
+                               targetscan_threshold, evlncrnas_threshold, include_literature):
         """Case insensitive search"""
         return self._execute_regulation_query(
             "UPPER(g.gene_symbol) = UPPER(?)", [gene_symbol], min_confidence, 
-            mirdb_threshold, targetscan_threshold, include_literature
+            mirdb_threshold, targetscan_threshold, evlncrnas_threshold, include_literature
         )
     
     def _variation_search(self, gene_symbol, min_confidence, mirdb_threshold, 
-                         targetscan_threshold, include_literature):
+                         targetscan_threshold, evlncrnas_threshold, include_literature):
         """Search using mapped variations"""
         
         # Get variations from mapper
@@ -196,11 +197,11 @@ class EnhancedNCRNADatabase:
         
         return self._execute_regulation_query(
             condition, variations, min_confidence, 
-            mirdb_threshold, targetscan_threshold, include_literature
+            mirdb_threshold, targetscan_threshold, evlncrnas_threshold, include_literature
         )
     
     def _pattern_search(self, gene_symbol, min_confidence, mirdb_threshold, 
-                       targetscan_threshold, include_literature):
+                       targetscan_threshold, evlncrnas_threshold, include_literature):
         """Pattern-based fuzzy search"""
         
         search_pattern = "%{}%".format(gene_symbol)
@@ -209,13 +210,13 @@ class EnhancedNCRNADatabase:
         
         results = self._execute_regulation_query(
             condition, params, min_confidence, 
-            mirdb_threshold, targetscan_threshold, include_literature, limit=50
+            mirdb_threshold, targetscan_threshold, evlncrnas_threshold, include_literature, limit=50
         )
         
         return results
     
     def _execute_regulation_query(self, condition, params, min_confidence, 
-                                mirdb_threshold, targetscan_threshold, 
+                                mirdb_threshold, targetscan_threshold, evlncrnas_threshold,
                                 include_literature, limit=None):
         """Execute regulation query with enhanced error handling"""
         
@@ -257,6 +258,10 @@ class EnhancedNCRNADatabase:
                 conditions.append("(r.pubmed_ids != 'TargetScan_v8.0' OR r.confidence_score >= ?)")
                 query_params.append(abs(targetscan_threshold))
             
+            if evlncrnas_threshold is not None:
+                conditions.append("(r.pubmed_ids != 'EVLncRNAs3.0' OR r.confidence_score >= ?)")
+                query_params.append(evlncrnas_threshold)
+            
             if not include_literature:
                 conditions.append("r.evidence_level != 'experimental'")
             
@@ -283,6 +288,7 @@ class EnhancedNCRNADatabase:
                            min_confidence=0.0,
                            mirdb_threshold=None,
                            targetscan_threshold=None,
+                           evlncrnas_threshold=None,
                            include_disease=True,
                            debug=False):
         
@@ -307,7 +313,7 @@ class EnhancedNCRNADatabase:
             
             for term in search_terms[:10]:  # Limit variations
                 results = self._execute_ncrna_query(term, min_confidence, mirdb_threshold, 
-                                                  targetscan_threshold, method_name)
+                                                  targetscan_threshold, evlncrnas_threshold, method_name)
                 
                 if not results.empty:
                     results['searched_symbol'] = ncrna_symbol
@@ -372,7 +378,7 @@ class EnhancedNCRNADatabase:
         return list(dict.fromkeys(variations))
     
     def _execute_ncrna_query(self, ncrna_symbol, min_confidence, mirdb_threshold, 
-                           targetscan_threshold, search_method):
+                           targetscan_threshold, evlncrnas_threshold, search_method):
         """Execute ncRNA target query"""
         
         conn = self.get_connection()
@@ -417,6 +423,10 @@ class EnhancedNCRNADatabase:
             if targetscan_threshold is not None:
                 conditions.append("(r.pubmed_ids != 'TargetScan_v8.0' OR r.confidence_score >= ?)")
                 params.append(abs(targetscan_threshold))
+            
+            if evlncrnas_threshold is not None:
+                conditions.append("(r.pubmed_ids != 'EVLncRNAs3.0' OR r.confidence_score >= ?)")
+                params.append(evlncrnas_threshold)
             
             if conditions:
                 query += " AND " + " AND ".join(conditions)
@@ -600,7 +610,6 @@ def print_gene_results(results, gene_symbol):
         print("No ncRNA regulators found for gene: {}".format(gene_symbol))
         return
     
-    print("ncRNA Regulators for Gene: {}".format(gene_symbol))
     print("=" * 70)
     
     if 'search_method' in results.columns:
@@ -608,13 +617,33 @@ def print_gene_results(results, gene_symbol):
         print("Search methods used: {}".format(", ".join(methods)))
         print()
     
-    for ncrna_type in results['ncrna_type'].unique():
-        type_results = results[results['ncrna_type'] == ncrna_type]
-        print("{} Regulators ({}):".format(ncrna_type.upper(), len(type_results)))
+    # Separate by ncRNA type for clearer display
+    mirna_results = results[results['ncrna_type'] == 'miRNA'] if not results.empty else pd.DataFrame()
+    lncrna_results = results[results['ncrna_type'] == 'lncRNA'] if not results.empty else pd.DataFrame()
+    
+    if not mirna_results.empty:
+        print("miRNA Regulators ({}):".format(len(mirna_results)))
         print("-" * 40)
         
-        for _, row in type_results.head(10).iterrows():  # Show top 10
-            print("  {} → {}".format(row['ncrna_symbol'], row['target_gene_symbol']))
+        for _, row in mirna_results.head(10).iterrows():  # Show top 10
+            print("  miRNA {} → Gene {}".format(row['ncrna_symbol'], row['target_gene_symbol']))
+            print("    Regulation: {} | Confidence: {:.3f}".format(
+                row['regulation_type'], row['confidence_score']))
+            print("    Evidence: {} | Source: {}".format(
+                row['evidence_level'], row['pubmed_ids']))
+            
+            if 'hpo_diseases' in row and pd.notna(row['hpo_diseases']):
+                print("    HPO Diseases: {}".format(row['hpo_diseases'][:100]))
+            if 'omim_diseases' in row and pd.notna(row['omim_diseases']):
+                print("    OMIM Diseases: {}".format(row['omim_diseases'][:100]))
+            print()
+    
+    if not lncrna_results.empty:
+        print("lncRNA Regulators ({}):".format(len(lncrna_results)))
+        print("-" * 40)
+        
+        for _, row in lncrna_results.head(10).iterrows():  # Show top 10
+            print("  lncRNA {} → Gene {}".format(row['ncrna_symbol'], row['target_gene_symbol']))
             print("    Regulation: {} | Confidence: {:.3f}".format(
                 row['regulation_type'], row['confidence_score']))
             print("    Evidence: {} | Source: {}".format(
@@ -631,7 +660,12 @@ def print_ncrna_results(results, ncrna_symbol):
         print("No target genes found for ncRNA: {}".format(ncrna_symbol))
         return
     
-    print("Target Genes for ncRNA: {}".format(ncrna_symbol))
+    # Determine ncRNA type from results
+    ncrna_type = "ncRNA"
+    if not results.empty:
+        ncrna_type = results['ncrna_type'].iloc[0] if 'ncrna_type' in results.columns else "ncRNA"
+    
+    print("Target Genes for {}: {}".format(ncrna_type, ncrna_symbol))
     print("=" * 70)
     
     if 'search_method' in results.columns:
@@ -641,11 +675,11 @@ def print_ncrna_results(results, ncrna_symbol):
     
     for reg_type in results['regulation_type'].unique():
         type_results = results[results['regulation_type'] == reg_type]
-        print("{} Regulation ({}):".format(reg_type.upper(), len(type_results)))
+        print("{} Regulation by {} ({}):".format(reg_type.upper(), ncrna_type, len(type_results)))
         print("-" * 40)
         
         for _, row in type_results.head(10).iterrows():  # Show top 10
-            print("  {} → {}".format(row['ncrna_symbol'], row['target_gene_symbol']))
+            print("  {} {} → Gene {}".format(ncrna_type, row['ncrna_symbol'], row['target_gene_symbol']))
             print("    Confidence: {:.3f} | Mechanism: {}".format(
                 row['confidence_score'], row['regulation_mechanism'] or 'Unknown'))
             print("    Evidence: {} | Gene Type: {}".format(
@@ -685,10 +719,12 @@ def print_disease_results(results, disease_name):
 def main():
     parser = argparse.ArgumentParser(description='Enhanced ncRNA database search')
     parser.add_argument('--search-type', required=True, 
-                       choices=['stats', 'gene-to-ncrna', 'ncrna-to-gene', 'disease'],
-                       help='Type of search to perform')
+                       choices=['stats', 'gene-to-ncrna', 'ncrna-to-gene', 'mirna-to-gene', 'gene-to-mirna', 'lncrna-to-gene', 'gene-to-lncrna', 'disease'],
+                       help='Type of search to perform: gene-to-ncrna (find all ncRNA regulators), ncrna-to-gene (find all gene targets), mirna-to-gene (find miRNA targets), gene-to-mirna (find miRNA regulators), lncrna-to-gene (find lncRNA targets), gene-to-lncrna (find lncRNA regulators), disease (find disease associations)')
     parser.add_argument('--gene', help='Gene symbol to search for')
-    parser.add_argument('--ncrna', help='ncRNA symbol to search for')
+    parser.add_argument('--ncrna', help='ncRNA symbol to search for (miRNA or lncRNA)')
+    parser.add_argument('--mirna', help='miRNA symbol to search for')
+    parser.add_argument('--lncrna', help='lncRNA symbol to search for')
     parser.add_argument('--disease', help='Disease name to search for')
     parser.add_argument('--min-confidence', type=float, default=0.0,
                        help='Minimum confidence score (0.0-1.0)')
@@ -696,6 +732,8 @@ def main():
                        help='miRDB score threshold (0-100)')
     parser.add_argument('--targetscan-threshold', type=float,
                        help='TargetScan context score threshold (e.g., -0.3)')
+    parser.add_argument('--evlncrnas-threshold', type=float,
+                       help='EVLncRNAs confidence threshold (0.0-1.0)')
     parser.add_argument('--no-literature', action='store_true',
                        help='Exclude literature-based regulations')
     parser.add_argument('--no-disease', action='store_true',
@@ -724,9 +762,9 @@ def main():
                 filename = args.output_name or "database_stats"
                 db.export_results(stats_df, filename, args.export)
             
-        elif args.search_type == 'gene-to-ncrna':
+        elif args.search_type in ['gene-to-ncrna', 'gene-to-mirna', 'gene-to-lncrna']:
             if not args.gene:
-                print("Gene parameter required for gene-to-ncrna search")
+                print("Gene parameter required for {} search".format(args.search_type))
                 sys.exit(1)
             
             results = db.search_gene_regulators(
@@ -734,10 +772,21 @@ def main():
                 min_confidence=args.min_confidence,
                 mirdb_threshold=args.mirdb_threshold,
                 targetscan_threshold=args.targetscan_threshold,
+                evlncrnas_threshold=args.evlncrnas_threshold,
                 include_literature=not args.no_literature,
                 include_disease=not args.no_disease,
                 debug=args.debug
             )
+            
+            # Filter results based on search type
+            if args.search_type == 'gene-to-mirna':
+                results = results[results['ncrna_type'] == 'miRNA'] if not results.empty else results
+                print("miRNA Regulators for Gene: {}".format(args.gene))
+            elif args.search_type == 'gene-to-lncrna':
+                results = results[results['ncrna_type'] == 'lncRNA'] if not results.empty else results
+                print("lncRNA Regulators for Gene: {}".format(args.gene))
+            else:
+                print("All ncRNA Regulators for Gene: {}".format(args.gene))
             
             print_gene_results(results, args.gene)
             
@@ -745,24 +794,38 @@ def main():
                 filename = args.output_name or "{}_regulators".format(args.gene)
                 db.export_results(results, filename, args.export)
                 
-        elif args.search_type == 'ncrna-to-gene':
-            if not args.ncrna:
-                print("ncrna parameter required for ncrna-to-gene search")
+        elif args.search_type in ['ncrna-to-gene', 'mirna-to-gene', 'lncrna-to-gene']:
+            # Determine which ncRNA parameter to use
+            ncrna_symbol = None
+            if args.search_type == 'mirna-to-gene' and args.mirna:
+                ncrna_symbol = args.mirna
+                print("Gene Targets for miRNA: {}".format(args.mirna))
+            elif args.search_type == 'lncrna-to-gene' and args.lncrna:
+                ncrna_symbol = args.lncrna
+                print("Gene Targets for lncRNA: {}".format(args.lncrna))
+            elif args.search_type == 'ncrna-to-gene' and args.ncrna:
+                ncrna_symbol = args.ncrna
+                print("Gene Targets for ncRNA: {}".format(args.ncrna))
+            
+            if not ncrna_symbol:
+                param_needed = 'mirna' if args.search_type == 'mirna-to-gene' else ('lncrna' if args.search_type == 'lncrna-to-gene' else 'ncrna')
+                print("{} parameter required for {} search".format(param_needed, args.search_type))
                 sys.exit(1)
             
             results = db.search_ncrna_targets(
-                ncrna_symbol=args.ncrna,
+                ncrna_symbol=ncrna_symbol,
                 min_confidence=args.min_confidence,
                 mirdb_threshold=args.mirdb_threshold,
                 targetscan_threshold=args.targetscan_threshold,
+                evlncrnas_threshold=args.evlncrnas_threshold,
                 include_disease=not args.no_disease,
                 debug=args.debug
             )
             
-            print_ncrna_results(results, args.ncrna)
+            print_ncrna_results(results, ncrna_symbol)
             
             if args.export and not results.empty:
-                filename = args.output_name or "{}_targets".format(args.ncrna)
+                filename = args.output_name or "{}_targets".format(ncrna_symbol)
                 db.export_results(results, filename, args.export)
                 
         elif args.search_type == 'disease':
