@@ -1,12 +1,11 @@
-
 database:
   path: "database"
   name: "ncrna_regulation_db.sqlite"
 
 data_sources:
   general_genes_mart: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/general_genes_mart.txt"
-  gene_info: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/gene_info.gz"
-  gene2refseq: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/gene2refseq.gz"
+  gene_info: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/mapping_files/gene_info.gz"
+  gene2refseq: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/mapping_files/gene2refseq.gz"
 
   gencode:
     gencode_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/gencode/gencode.v44.long_noncoding_RNAs.gtf.gz"
@@ -16,7 +15,6 @@ data_sources:
   lncipedia:
     lncipedia_gtf: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.gtf"
     lncipedia_fasta: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_hc.fa"
-    lncipedia_bed: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/core/lncipedia/lncipedia_5_2_hg38.bed"
     timeout: 20
 
   omim_data:
@@ -40,18 +38,27 @@ regulation_sources:
   targetscan:
     targetscan_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/data/regulation/targetscan/targets.zip"
 
-# Quality and filtering thresholds
+  evlncrnas:
+    evlncrnas_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/lncRNA_sources/EVLncRNAs3_human_data.zip"
+    
+  lnctard:
+    lnctard_file: "/proj/sens2023005/nobackup/wharf/dimam/dimam-sens2023005/Database_sources/lncRNA_sources/lnctard2.0.zip"
+
 thresholds:
   mirdb_score_threshold: 80
   targetscan_context_score_threshold: -0.2
+  evlncrnas_confidence_threshold: 0.5
+  lnctard_confidence_threshold: 0.7
   confidence_threshold: 0.7
   
-# Optional limits (set to 0 or null for no limits)
 limits:
-  max_genes_per_source: 0
-  max_ncrnas_per_source: 0
-  max_regulations_per_source: 0
-  max_hpo_terms: 0
+  max_genes_per_source: 500000
+  max_ncrnas_per_source: 25000
+  max_regulations_per_source: 100000
+  max_hpo_terms: 10000
+  max_gene_mappings: 500000
+  max_ncrna_mappings: 100000
+  max_lookup_variations: 10
 
 search:
   max_results: 1000
