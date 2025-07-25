@@ -34,7 +34,7 @@ class BiancaDataFetcher:
         self.thresholds = self.config.get('thresholds', {})
         self.limits = self.config.get('limits', {})
         
-        # Initialize  gene mapper
+        # Initialize enhanced gene mapper
         logger.info("Initializing enhanced gene mapper...")
         self.gene_mapper = None
         self.gene_lookup = {}
@@ -901,7 +901,7 @@ class BiancaDataFetcher:
             
             conn = sqlite3.connect(self.db_file)
             try:
-                # Insert OMIM entries 
+                # Insert OMIM entries first
                 for entry in omim_entries:
                     conn.execute("""
                         INSERT OR REPLACE INTO omim_entries 
@@ -956,7 +956,7 @@ class BiancaDataFetcher:
             return []
 
     def _fast_batch_populate_regulations(self, conn, regulations):
-        """ Batch processing for regulations using lookup dictionaries"""
+        """Fast batch processing for regulations using lookup dictionaries"""
         logger.info("Processing {} regulation relationships with fast batch matching...".format(len(regulations)))
         
         # Group regulations by ncRNA and target for batch processing
