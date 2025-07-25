@@ -1,6 +1,6 @@
 
 """
- SQLite database with schema for bidirectional seaches for genes and ncRNAs. 
+  Database with schema for seaches for genes and ncRNAs. 
 """
 
 import sqlite3

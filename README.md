@@ -10,6 +10,8 @@ The database has been designed to be compatable with Bianca UPPMAX. The database
 
 The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv folder where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
 
+Although the intention was to create a database for lncRNAs the database currently stores information about ncRNAs with room for the addtion of a lncRNA regulation source to be fetched like the other sources found in the data fetcher and search functions. 
+
 ## Database python files
 A general description of the codes provided in each file and the functionality. 
 There is a wide potential with future applications of this code. 
@@ -43,7 +45,6 @@ Gencode gtf: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_4
 Gencode lncrna fasta: https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_44/gencode.v44.lncRNA_transcripts.fa.gz
 
 Lncipedia fasta url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0.fasta
-
 Lncipedia gtf_url: https://lncipedia.org/downloads/lncipedia_5_0/full-database/lncipedia_5_0_hg38.gtf
 
 OMIM mart file found through directory downloaded from ensembl biomart: https://www.ensembl.org/biomart/martview/d32f188e084d91493eadd4a96965194d

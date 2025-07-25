@@ -1,5 +1,5 @@
 """
-Enhanced gene symbol mapper with gene2refseq integration for comprehensive mappings
+ Gene symbol mapper with gene2refseq integration and mappings
 """
 
 import sqlite3
@@ -478,12 +478,12 @@ class PersistentGeneMapper:
             
         query = query.strip()
         
-        # Try exact matches first (case-insensitive)
+        #  exact matches first (case-insensitive)
         for test_query in [query, query.upper(), query.lower()]:
             if test_query in self.gene_symbol_map:
                 return self.gene_symbol_map[test_query]
         
-        # Try partial matches
+        #  partial matches
         query_upper = query.upper()
         for key, value in self.gene_symbol_map.items():
             key_upper = key.upper()
@@ -493,7 +493,7 @@ class PersistentGeneMapper:
         return None
     
     def find_ncrna_symbol(self, query):
-        """Find standard ncRNA symbol for a query with enhanced search"""
+        """ standard ncRNA symbol for a query with enhanced search"""
         if not query:
             return None
             
@@ -504,7 +504,7 @@ class PersistentGeneMapper:
             if test_query in self.ncrna_symbol_map:
                 return self.ncrna_symbol_map[test_query]
         
-        # Try partial matches
+        #  partial matches
         query_upper = query.upper()
         for key, value in self.ncrna_symbol_map.items():
             key_upper = key.upper()
@@ -514,7 +514,7 @@ class PersistentGeneMapper:
         return None
     
     def get_all_variations(self, symbol):
-        """Get all known variations of a symbol"""
+        """ known variations of a symbol"""
         standard_symbol = self.find_gene_symbol(symbol) or self.find_ncrna_symbol(symbol)
         
         if standard_symbol and standard_symbol in self.symbol_variations:
@@ -523,7 +523,7 @@ class PersistentGeneMapper:
         return [symbol]  # Return original if no variations found
     
     def get_mapping_stats(self):
-        """Get comprehensive mapping statistics"""
+        """ comprehensive mapping statistics"""
         stats = {
             'total_gene_mappings': len(self.gene_symbol_map),
             'total_ncrna_mappings': len(self.ncrna_symbol_map),
@@ -535,7 +535,7 @@ class PersistentGeneMapper:
         return stats
     
     def show_status(self):
-        """Show current mapping status"""
+        """ current mapping status"""
         print("=" * 50)
         print("GENE SYMBOL MAPPING STATUS")
         print("=" * 50)
