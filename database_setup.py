@@ -181,7 +181,7 @@ class DatabaseSetup:
             "CREATE INDEX IF NOT EXISTS idx_ncrna_type ON ncrna_genes(ncrna_type)",
             "CREATE INDEX IF NOT EXISTS idx_ncrna_location ON ncrna_genes(chromosome, start_position, end_position)",
             
-            # Regulation indexes (critical for performance)
+            # Regulation indexes 
             "CREATE INDEX IF NOT EXISTS idx_regulations_ncrna ON regulations(ncrna_id)",
             "CREATE INDEX IF NOT EXISTS idx_regulations_gene ON regulations(target_gene_id)",
             "CREATE INDEX IF NOT EXISTS idx_regulations_type ON regulations(regulation_type)",
