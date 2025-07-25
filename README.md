@@ -33,7 +33,7 @@ In the configuration file you can find all the sources that contribute to popula
 
 #### Database sources 
 
-General_genes_mart: 
+General_genes_mart: https://www.ensembl.org/info/data/biomart/
 
 Gene_info: https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz   
   
