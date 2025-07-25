@@ -8,9 +8,8 @@ The database has been designed to be compatable with Bianca UPPMAX. The database
 
 ### Search types
 
-The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv folder where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs combining all the sources populating the tables of the database. 
+The user can search gene to ncRNA and vice versa. The user can also search disease association. The results are presented in csv folder where all the related information from the soruces are combined giving valuable information for genes or for ncRNAs, lncRNAs combining all the sources populating the tables of the database. 
 
-Although the intention was to create a database for lncRNAs the database currently stores information about ncRNAs with room for the addtion of a lncRNA regulation source to be fetched like the other sources found in the data fetcher and search functions. 
 
 ## Database python files
 A general description of the codes provided in each file and the functionality. 
@@ -58,6 +57,9 @@ Mirdb: http://mirdb.org/download/miRDB_v6.0_prediction_result.txt.gz
 
 Targetscan: https://www.targetscan.org/vert_80/vert_80_data_download/Predicted_Targets_Info.default_predictions.txt.zip
 
+EVLncRNAs: https://request.sdklab-biophysics-dzu.net/uploads/files/EVLncRNAs3_human_data.zip
+LncRNAdb: File from supervior lnctard2.0.zip
+
 ### data_fetcher.py
 
 The data fetcher uses the sources in the config.yaml and populates the databases. It fetches miRNA-target regulations fro the miRDB file. It also fetches the lncRA genes from gencode gtf files with quality score of above 0.7. LncRNA egulations are created with high quality from literature. HPO and omim terms are fetched from obo and mart file respectively. 
@@ -70,6 +72,9 @@ It parses information from OMIM and combines it in the database schema for linki
 
 ### gene_mapper.py
 Due to the difference in each and every database where biomart, ensembl, mirdb all define the genes differently. I wanted the user to search genes using gene names rather than ensembl ID etc. In order to do so, the gene_mapper maps the names in ensmebl with the information about the corresponding ncRNA by using ncbi gene info. 
+
+### run database.sh
+In this file one can submit the searches. I have provided with examples that can be modified. 
 
 
 ## References 
@@ -92,3 +97,9 @@ Liu, C., Bai, B., Skogerbø, G., Cai, L., Deng, W., Zhang, Y., Bu, D., Zhao, Y.,
 Yuhao Chen, Xiaowei Wang. 2020 miRDB: an online database for prediction of functional microRNA targets, Nucleic Acids Research: 48, D1:D127–D131.
 
 McGeary, S. E., Lin, K. S., Shi, C. Y., Pham, T. M., Bisaria, N., Kelley, G. M., & Bartel, D. P. 2019. The biochemical basis of microRNA targeting efficacy. Science (New York, N.Y.), 366(6472).
+
+Zhou, B., Ji, B., Shen, C., Zhang, X., Yu, X., Huang, P., Yu, R., Zhang, H., Dou, X., Chen, Q., Zeng, Q., Wang, X., Cao, Z., Hu, G., Xu, S., Zhao, H., Yang, Y., Zhou, Y., & Wang, J. (2024). EVLncRNAs 3.0: an updated comprehensive database for manually curated functional long non-coding RNAs validated by low-throughput experiments. Nucleic acids research, 52(D1), D98–D106. 
+
+Zhao, H., Yin, X., Xu, H., Liu, K., Liu, W., Wang, L., Zhang, C., Bo, L., Lan, X., Lin, S., Feng, K., Ning, S., Zhang, Y., & Wang, L. 2023. LncTarD 2.0: an updated comprehensive database for experimentally-supported functional lncRNA-target regulations in human diseases. Nucleic acids research, 51(D1), D199–D207. 
+
+
